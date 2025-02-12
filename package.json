@@ -1,0 +1,29 @@
+{
+  "name": "sword-pi-socket",
+  "version": "1.0.0",
+  "description": "server code to run on sword in duelists",
+  "main": "webserver.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jackmqiu/sword-pi-socket.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jackmqiu/sword-pi-socket/issues"
+  },
+  "homepage": "https://github.com/jackmqiu/sword-pi-socket#readme",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "mpu6050": "^0.1.4",
+    "onoff": "^6.0.1",
+    "socket.io": "^3.0.5",
+    "socket.io-client": "^3.0.5"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
+  }
+}
