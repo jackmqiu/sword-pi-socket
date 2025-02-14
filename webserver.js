@@ -3,6 +3,7 @@ const dotenv = require('dotenv').config();
 const http = require('http').createServer(handler); //require http server, and create server with function handler()
 const fs = require('fs'); //require filesystem module
 const io = require('socket.io-client');
+const { Data3D, MotionData, MPU6050, Utils } = require('@ros2jsguy/mpu6050-motion-data');
 
 http.listen(8080); //listen to port 8080
 	  console.log('running server file');
@@ -31,6 +32,28 @@ function handler (req, res) { //create server
   });
 }
 
+	// MPU6050
+	const imu = new MPU6050();
+	imu.initialize();
+
+	console.log('device id: ', imu.getDeviceID());
+	// use testConnection() to ensure the mpu6050 is working properly
+	console.log('Device connected:', imu.testConnection());
+	if (!imu.testConnection()){
+		imu.reset();
+		console.log('reset');
+		setTimeout(() => {}, 1000);
+		imu.initialize();
+		console.log('device id: ', imu.getDeviceID());
+		console.log('device i2c: ', imu.getDeviceI2CAddr());
+		console.log('Device connected:', imu.testConnection());
+
+	}
+const intervalId = setInterval(() => {
+	const motionData = imu.getMotionData();
+	console.log('Device data:', motionData);
+}, 1000);
+	
  //GPIO
 
   const Gpio = require('onoff').Gpio;
@@ -64,48 +87,54 @@ socket.on('connect_error', (error) => {
 socket.on('connect', function () {
     console.log('connected to localhost:3000');
 	  console.log('id', socket.id);
-    socket.emit('initializeDevice', process.env.PI_DEVICE_NUMBER, process.env.DEVICE_TYPE);
-    let lightVal = 0;
-    // Shot registering
-      maskDevice.watch(function (err, val) {
-      	console.log('mask_hit');
-      	if (err) {
-      	   console.error('There was an error', err);
-      	   return;
-      	}
-        // if (process.env.DEVICE_TYPE === 'gun') {
-        //   socket.emit('shooting', process.env.PI_DEVICE_NUMBER);
-        // } else {
-          socket.emit('mask_hit', process.env.PI_DEVICE_NUMBER);
-          blinkLED();
-        // }
-      });
-      chestPlateDevice.watch((err, val) => {
-        console.log('chest hit');
-        socket.emit('chest_hit', process.env.PI_DEVICE_NUMBER);
-        blinkLED();
-      });
-      backPlateDevice.watch((err, val) => {
-        console.log('back hit');
-        socket.emit('back_hit', process.env.PI_DEVICE_NUMBER);
-        blinkLED();
-      });
-      gunDevice.watch((err, val) => {
-        console.log('shooting');
-        socket.emit('shooting', process.env.PI_DEVICE_NUMBER);
-        blinkLED();
-      })
-    if (process.env.NODE_ENV === 'local') { //local test
-      setTimeout(()=> socket.emit('shooting', process.env.PI_DEVICE_NUMBER), 1500);
-    }
-    socket.on('hit', (data) => {
-        console.log('message from the server:', data);
-        socket.emit('serverEvent', "thanks server! for sending '" + data + "'");
-	      if (process.env.NODE_ENV === 'pi') {
-          blinkLED();
-        };
-    });
 
+		
+	
+	  
+    socket.emit('initializeDevice', process.env.DEVICE_TYPE, process.env.SWORD_NAME);
+    
+    if (process.env.DEVICE_TYPE !== 'sword') {
+		let lightVal = 0;
+		// Shot registering
+		  maskDevice.watch(function (err, val) {
+			console.log('mask_hit');
+			if (err) {
+			   console.error('There was an error', err);
+			   return;
+			}
+			// if (process.env.DEVICE_TYPE === 'gun') {
+			//   socket.emit('shooting', process.env.PI_DEVICE_NUMBER);
+			// } else {
+			  socket.emit('mask_hit', process.env.PI_DEVICE_NUMBER);
+			  blinkLED();
+			// }
+		  });
+		  chestPlateDevice.watch((err, val) => {
+			console.log('chest hit');
+			socket.emit('chest_hit', process.env.PI_DEVICE_NUMBER);
+			blinkLED();
+		  });
+		  backPlateDevice.watch((err, val) => {
+			console.log('back hit');
+			socket.emit('back_hit', process.env.PI_DEVICE_NUMBER);
+			blinkLED();
+		  });
+		  gunDevice.watch((err, val) => {
+			console.log('shooting');
+			socket.emit('shooting', process.env.PI_DEVICE_NUMBER);
+			blinkLED();
+		  })
+		if (process.env.NODE_ENV === 'local') { //local test
+		  setTimeout(()=> socket.emit('shooting', process.env.PI_DEVICE_NUMBER), 1500);
+		}
+		socket.on('hit', (data) => {
+			console.log('message from the server:', data);
+			socket.emit('serverEvent', "thanks server! for sending '" + data + "'");
+			  if (process.env.NODE_ENV === 'pi') {
+			  blinkLED();
+			};
+		});
+	}
 });
 
 if (process.env.NODE_ENV === 'pi') {
