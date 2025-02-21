@@ -49,10 +49,12 @@ function handler (req, res) { //create server
 		console.log('Device connected:', imu.testConnection());
 
 	}
-const intervalId = setInterval(() => {
-	const motionData = imu.getMotionData();
-	console.log('Device data:', motionData);
-}, 1000);
+	
+		const intervalId = setInterval(() => {
+			const motionData = imu.getMotionData();
+			console.log('Device data:', motionData);
+		}, 1000);
+	
 	
  //GPIO
 

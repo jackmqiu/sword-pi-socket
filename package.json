@@ -20,6 +20,7 @@
     "@ros2jsguy/mpu6050-motion-data": "^0.2.1",
     "dotenv": "^8.2.0",
     "mpu6050": "^0.1.4",
+    "mpu6050-wiringpi": "^0.0.2",
     "onoff": "^6.0.1",
     "socket.io": "^3.0.5",
     "socket.io-client": "^3.0.5"
