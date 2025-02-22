@@ -3,7 +3,8 @@ const dotenv = require('dotenv').config();
 const http = require('http').createServer(handler); //require http server, and create server with function handler()
 const fs = require('fs'); //require filesystem module
 const io = require('socket.io-client');
-const { Data3D, MotionData, MPU6050, Utils } = require('@ros2jsguy/mpu6050-motion-data');
+const HX711 = require('pi-hx711');
+const Gpio = require('pigpio').Gpio;
 
 http.listen(8080); //listen to port 8080
 	  console.log('running server file');
@@ -33,30 +34,48 @@ function handler (req, res) { //create server
 }
 
 	// MPU6050
-	const imu = new MPU6050();
-	imu.initialize();
-
-	console.log('device id: ', imu.getDeviceID());
-	// use testConnection() to ensure the mpu6050 is working properly
-	console.log('Device connected:', imu.testConnection());
-	if (!imu.testConnection()){
-		imu.reset();
-		console.log('reset');
-		setTimeout(() => {}, 1000);
+	if (false) {
+		const imu = new MPU6050();
 		imu.initialize();
-		console.log('device id: ', imu.getDeviceID());
-		console.log('device i2c: ', imu.getDeviceI2CAddr());
-		console.log('Device connected:', imu.testConnection());
 
+		console.log('device id: ', imu.getDeviceID());
+		// use testConnection() to ensure the mpu6050 is working properly
+		console.log('Device connected:', imu.testConnection());
+		if (!imu.testConnection()){
+			imu.reset();
+					imu.initialize();
+			console.log('reset');
+			setTimeout(() => {}, 1000);
+			console.log('device id: ', imu.getDeviceID());
+			console.log('device i2c: ', imu.getDeviceI2CAddr());
+			console.log('Device connected:', imu.testConnection());
+
+		}
 	}
-	
+	if(false){
 		const intervalId = setInterval(() => {
 			const motionData = imu.getMotionData();
 			console.log('Device data:', motionData);
 		}, 1000);
+	}
 	
+		// HX711
+		let ot = new Gpio(576, 'in'); // GPIO5
+		let clk = new Gpio(577, 'in'); // GPIO6
+		const loadcell = new HX711(6,5);
+		loadcell.offset = 50000;
+		loadcell.scale = 0.00001;
+		
+		
+		const intervalId = setInterval(() => {
+			const guageData = loadcell.read();
+			console.log('strain data:', guageData);
+
+		}, 1000);
 	
  //GPIO
+ 
+ if (false) {
 
   const Gpio = require('onoff').Gpio;
   let LED = new Gpio(575, 'out'); // GPIO4
@@ -138,6 +157,7 @@ socket.on('connect', function () {
 		});
 	}
 });
+}
 
 if (process.env.NODE_ENV === 'pi') {
   process.on('SIGINT', () => {
