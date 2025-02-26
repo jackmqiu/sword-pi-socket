@@ -15,9 +15,6 @@ import socketio
 # Alternative libraries may vary in usage
 from MPU6050 import MPU6050
 
-# For GPIO. If you're on a Raspberry Pi, install gpiozero:
-# pip install gpiozero
-from gpiozero import LED, Button
 
 # Load environment variables from .env
 load_dotenv()
@@ -125,64 +122,8 @@ read_motion()  # start reading at 1-second intervals
 #
 # In a real RPi, the highest BCM pin is 27 or 29 for Pi 4. So you'd need to map these carefully.
 # For demonstration, let's assume you have them pinned to your local Pi's GPIO (with correct pins).
-LED_PIN = 4      # example physical pin
-MASK_PIN = 17    # example physical pin
-CHEST_PIN = 27   # example physical pin
-BACK_PIN = 22    # example physical pin
-GUN_PIN = 23     # example physical pin
+     # example physical pin
 
-led = LED(LED_PIN)
-maskDevice = Button(MASK_PIN, bounce_time=0.25)
-chestPlateDevice = Button(CHEST_PIN, bounce_time=0.25)
-backPlateDevice = Button(BACK_PIN, bounce_time=0.25)
-gunDevice = Button(GUN_PIN, bounce_time=0.25)
-
-def blink_led():
-    led.on()
-    Timer(1, led.off).start()
-
-def setup_gpio_watchers():
-    """
-    Watches the input pins and replicates the .watch() calls from Node.js
-    """
-    pi_device_number = os.getenv('PI_DEVICE_NUMBER')
-
-    def on_mask_hit():
-        print('mask_hit')
-        sio.emit('mask_hit', pi_device_number)
-        blink_led()
-
-    def on_chest_hit():
-        print('chest hit')
-        sio.emit('chest_hit', pi_device_number)
-        blink_led()
-
-    def on_back_hit():
-        print('back hit')
-        sio.emit('back_hit', pi_device_number)
-        blink_led()
-
-    def on_gun_shoot():
-        print('shooting')
-        sio.emit('shooting', pi_device_number)
-        blink_led()
-
-    maskDevice.when_pressed = on_mask_hit
-    chestPlateDevice.when_pressed = on_chest_hit
-    backPlateDevice.when_pressed = on_back_hit
-    gunDevice.when_pressed = on_gun_shoot
-
-# 5. Graceful Shutdown (SIGINT)
-# Equivalent to Node's process.on('SIGINT', ...)
-import signal
-
-def handle_sigint(sig, frame):
-    print('Caught SIGINT. Cleaning up GPIO and exiting.')
-    led.off()
-    # If using RPi.GPIO directly, we'd do GPIO.cleanup(), but gpiozero typically cleans itself.
-    os._exit(0)
-
-signal.signal(signal.SIGINT, handle_sigint)
 
 # 6. Socket.IO Connect
 server_host = os.getenv('SERVER', 'localhost')
