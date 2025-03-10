@@ -20,7 +20,7 @@ thread = None
 def emit_data():
     global dataOn
     while dataOn:
-        sio.emit('deviceData', {'data': mpu.acceleration})
+        sio.emit('deviceData', {'data': mpu.acceleration + mpu.gyro})
         time.sleep(0.01)
 
 
