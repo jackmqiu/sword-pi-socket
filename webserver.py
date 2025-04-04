@@ -1,75 +1,64 @@
-import os
-from dotenv import load_dotenv
+import time
+import board
+import adafruit_mpu6050
 import socketio
-import eventlet
-import eventlet.wsgi
-from flask import Flask, send_file
-from hx711 import HX711
-from gpiozero import LED, Button
-from threading import Timer
+import threading
+
+sio = socketio.Client(
+    reconnection=True,
+    reconnection_attempts=5,       # number of attempts
+    reconnection_delay=1,         # seconds delay between attempts
+    reconnection_delay_max=5      # max seconds between attempts
+)
+
+i2c = board.I2C()
+mpu = adafruit_mpu6050.MPU6050(i2c)
+dataOn = False
+thread = None
 
 
+def emit_data():
+    global dataOn
+    while dataOn:
+        sio.emit('deviceData', {'data': mpu.acceleration + mpu.gyro})
+        time.sleep(0.01)
 
-load_dotenv()
-
-# Flask setup for HTTP server
-app = Flask(__name__)
-
-@app.route('/')
-def index():
-    device_type = os.getenv('DEVICE_TYPE')
-    pi_device_number = os.getenv('PI_DEVICE_NUMBER')
-
-    if device_type == 'gun':
-        sio.emit('shooting', pi_device_number)
-    else:
-        sio.emit('hit', pi_device_number)
-
-    return send_file('public/index.html')
-
-# Socket.IO client setup
-sio = socketio.Client()
 
 @sio.event
 def connect():
-    print('Connected to server')
-    device_type = os.getenv('DEVICE_TYPE')
-    sword_name = os.getenv('SWORD_NAME')
-    pi_device_number = os.getenv('PI_DEVICE_NUMBER')
+    print("connected to socket server")
+    sio.emit('initializeDevice', {'deviceType': 'sword', 'swordName': 'yellow'})
 
-    sio.emit('initializeDevice', {'device_type': device_type, 'sword_name': sword_name})
-
-   
-@sio.event
-def connect_error(data):
-    print('Connection failed:', data)
 
 @sio.event
 def disconnect():
-    print('Disconnected from server')
-
-@sio.on('hit')
-def on_hit(data):
-    print('Message from server:', data)
-    sio.emit('serverEvent', f"thanks server! for sending '{data}'")
-    if os.getenv('NODE_ENV') == 'pi':
-        blink_led()
+    print("disconnected from server")
 
 
-# HX711 setup
-hx711 = HX711(dout_pin=5, pd_sck_pin=6)
-hx711.set_offset(50000)
-hx711.set_scale(0.00001)
+@sio.on('dataOn')
+def on_data_on():
+    global dataOn, thread
+    if not dataOn:
+        dataOn = True
+        thread = threading.Thread(target=emit_data)
+        thread.start()
 
-def read_strain():
-    gauge_data = hx711.get_weight_mean(5)
-    print('strain data:', gauge_data)
-    Timer(1, read_strain).start()
 
-read_strain()
+@sio.on('dataOff')
+def on_data_off():
+    global dataOn
+    dataOn = False
 
-# Start Socket.IO client
-sio.connect(f"http://{os.getenv('SERVER')}:3000", transports=['websocket'])
 
-# Run HTTP server
-eventlet.wsgi.server(eventlet.listen(('', 8080)), app)
+if __name__ == '__main__':
+    try:
+        sio.connect('http://192.168.86.34:3000')
+        sio.wait()
+    except Exception as e:
+        print(f"connect error: {e}")
+    finally:
+        dataOn = False
+        if thread:
+            thread.join()
+        if sio.connected:
+            sio.disconnect()
